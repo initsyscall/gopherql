@@ -1,4 +1,4 @@
-module github.com/initsyscall/gopherql
+module codeberg.org/initsyscall/gopherql
 
 go 1.26.5
 
