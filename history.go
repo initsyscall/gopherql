@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 type History struct {
@@ -76,4 +78,18 @@ func loadHistory(path string) []string {
 		return nil
 	}
 	return entries
+}
+
+func wrapHistory(entries []string, width int) string {
+	if len(entries) == 0 {
+		return ""
+	}
+	if width < 1 {
+		width = 1
+	}
+	lines := strings.Split(lipgloss.NewStyle().Width(width).Render(strings.Join(entries, "\n\n")), "\n")
+	for i := range lines {
+		lines[i] = strings.TrimRight(lines[i], " ")
+	}
+	return strings.Join(lines, "\n")
 }

@@ -86,7 +86,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		m.queryVP.SetContent(m.sliceQuery())
-		m.historyVP.SetContent(strings.Join(m.history.entries, "\n"))
+		m.historyVP.SetContent(wrapHistory(m.history.entries, m.historyPaneWidth()))
 
 		return m, nil
 
@@ -191,7 +191,7 @@ case "enter":
 				m.lastError = result.text
 			case "":
 				m.history.Add(input)
-				m.historyVP.SetContent(strings.Join(m.history.entries, "\n"))
+				m.historyVP.SetContent(wrapHistory(m.history.entries, m.historyPaneWidth()))
 
 				if m.db != nil {
 					cols, rows, err := executeQueryWithRows(m.db, input)
@@ -236,6 +236,11 @@ case "enter":
 	var cmd tea.Cmd
 	m.textInput, cmd = m.textInput.Update(msg)
 	return m, cmd
+}
+
+func (m model) historyPaneWidth() int {
+	left := int(float64(m.width) * 0.7)
+	return m.width - left - 3
 }
 
 func (m model) sliceQuery() string {
