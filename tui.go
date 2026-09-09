@@ -19,17 +19,19 @@ const (
 )
 
 type model struct {
-	db           *sql.DB
-	history      *History
-	textInput    textinput.Model
-	queryVP      viewport.Model
-	historyVP    viewport.Model
-	mode         mode
-	queryOutput  string
-	lastError    string
-	width        int
-	height       int
-	ready        bool
+	db            *sql.DB
+	history       *History
+	textInput     textinput.Model
+	queryVP       viewport.Model
+	historyVP     viewport.Model
+	mode          mode
+	queryOutput   string
+	queryLines    []string
+	scrollX       int
+	lastError     string
+	width         int
+	height        int
+	ready         bool
 }
 
 func newModel(dbPath string) model {
@@ -79,7 +81,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.historyVP.Height = paneHeight
 		}
 
-		m.queryVP.SetContent(m.queryOutput)
+		m.queryVP.SetContent(m.sliceQuery())
 		m.historyVP.SetContent(strings.Join(m.history.entries, "\n"))
 
 		return m, nil
@@ -101,6 +103,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+shift+k", "ctrl+K":
 			m.queryVP.LineUp(1)
 			return m, nil
+		case "ctrl+shift+right", "ctrl+right":
+			m.scrollX += 4
+			m.queryVP.SetContent(m.sliceQuery())
+			return m, nil
+		case "ctrl+shift+left", "ctrl+left":
+			if m.scrollX > 0 {
+				m.scrollX -= 4
+				if m.scrollX < 0 {
+					m.scrollX = 0
+				}
+				m.queryVP.SetContent(m.sliceQuery())
+			}
+			return m, nil
 
 		case "enter":
 			input := m.textInput.Value()
@@ -117,9 +132,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.historyVP.SetContent("")
 				m.lastError = ""
 				m.queryOutput = result.text
-				m.queryVP.SetContent(m.queryOutput)
+				m.queryLines = strings.Split(m.queryOutput, "\n")
+				m.scrollX = 0
+				m.queryVP.SetContent(m.sliceQuery())
 			case "clear":
 				m.queryOutput = ""
+				m.queryLines = nil
+				m.scrollX = 0
 				m.queryVP.SetContent("")
 				m.lastError = ""
 			case "error":
@@ -144,7 +163,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.lastError = "no database connection"
 					m.queryOutput = errorStyle.Render(m.lastError)
 				}
-				m.queryVP.SetContent(m.queryOutput)
+				m.queryLines = strings.Split(m.queryOutput, "\n")
+				m.scrollX = 0
+				m.queryVP.SetContent(m.sliceQuery())
 			}
 
 			m.textInput.SetValue("")
@@ -169,6 +190,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.textInput, cmd = m.textInput.Update(msg)
 	return m, cmd
+}
+
+func (m model) sliceQuery() string {
+	if m.scrollX == 0 || len(m.queryLines) == 0 {
+		return m.queryOutput
+	}
+	visible := make([]string, len(m.queryLines))
+	leftWidth := int(float64(m.width) * 0.7)
+	lineWidth := leftWidth - 6
+	for i, line := range m.queryLines {
+		end := m.scrollX + lineWidth
+		if end > len(line) {
+			end = len(line)
+		}
+		if m.scrollX < len(line) {
+			visible[i] = line[m.scrollX:end]
+		} else {
+			visible[i] = ""
+		}
+	}
+	return strings.Join(visible, "\n")
 }
 
 func (m model) View() string {
