@@ -215,6 +215,7 @@ case "enter":
 			}
 
 			m.textInput.SetValue("")
+			m.mode = modeSQL
 			return m, nil
 
 		case "up":
@@ -235,6 +236,11 @@ case "enter":
 
 	var cmd tea.Cmd
 	m.textInput, cmd = m.textInput.Update(msg)
+	if strings.HasPrefix(m.textInput.Value(), "/") {
+		m.mode = modeCommand
+	} else {
+		m.mode = modeSQL
+	}
 	return m, cmd
 }
 
@@ -262,6 +268,29 @@ func (m model) sliceQuery() string {
 		}
 	}
 	return strings.Join(visible, "\n")
+}
+
+func (m model) commandPreview() string {
+	matches := filterCommands(m.textInput.Value())
+	if len(matches) == 0 {
+		return mutedStyle.Render("no matching command")
+	}
+	lines := make([]string, len(matches))
+	for i, c := range matches {
+		lines[i] = m.highlightMatch(c)
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, lines...)
+}
+
+func (m model) highlightMatch(cmd string) string {
+	input := strings.ToLower(strings.TrimSpace(m.textInput.Value()))
+	lower := strings.ToLower(cmd)
+	idx := strings.Index(lower, input)
+	if idx < 0 {
+		return promptStyle.Render(cmd)
+	}
+	rendered := cmd[:idx] + matchedStyle.Render(cmd[idx:idx+len(input)]) + cmd[idx+len(input):]
+	return promptStyle.Render(rendered)
 }
 
 func (m model) View() string {
@@ -295,6 +324,8 @@ func (m model) View() string {
 	switch {
 	case m.confirmBurn:
 		bottom = confirmStyle.Render(m.confirmMsg) + "\n" + prompt
+	case m.mode == modeCommand:
+		bottom = m.commandPreview() + "\n" + prompt
 	case m.lastError != "":
 		bottom = errorStyle.Render(m.lastError) + "\n" + prompt
 	default:

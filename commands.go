@@ -10,6 +10,24 @@ type cmdResult struct {
 	target string
 }
 
+var allCommands = []string{
+	"/quit",
+	"/burn history",
+	"/burn db",
+	"/clear",
+}
+
+func filterCommands(input string) []string {
+	input = strings.ToLower(strings.TrimSpace(input))
+	var matches []string
+	for _, c := range allCommands {
+		if input == "" || strings.Contains(strings.ToLower(c), input) {
+			matches = append(matches, c)
+		}
+	}
+	return matches
+}
+
 func handleCommand(input string) cmdResult {
 	input = strings.TrimSpace(input)
 	if !strings.HasPrefix(input, "/") {

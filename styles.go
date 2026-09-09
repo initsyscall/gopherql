@@ -18,8 +18,15 @@ var (
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(lipgloss.Color("62"))
 
+mutedStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("241"))
+
 	promptStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("86")).
+		Foreground(lipgloss.Color("86")).
+		Bold(true)
+
+	matchedStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("212")).
 			Bold(true)
 
 	errorStyle = lipgloss.NewStyle().
