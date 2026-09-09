@@ -29,6 +29,10 @@ var (
 	successStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("46"))
 
+	confirmStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("196")).
+			Bold(true)
+
 	helpStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("241")).
 			Italic(true)

@@ -51,3 +51,34 @@ func executeQueryWithRows(db *sql.DB, query string) (columns []string, rows [][]
 
 	return columns, rows, rowsResult.Err()
 }
+
+func burnDB(db *sql.DB) error {
+	tables, err := listTables(db)
+	if err != nil {
+		return err
+	}
+	for _, t := range tables {
+		if _, err := db.Exec(`DROP TABLE IF EXISTS "` + t + `"`); err != nil {
+			return fmt.Errorf("drop %s: %w", t, err)
+		}
+	}
+	return nil
+}
+
+func listTables(db *sql.DB) ([]string, error) {
+	rows, err := db.Query(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`)
+	if err != nil {
+		return nil, fmt.Errorf("list tables: %w", err)
+	}
+	defer rows.Close()
+
+	var tables []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, fmt.Errorf("scan table: %w", err)
+		}
+		tables = append(tables, name)
+	}
+	return tables, rows.Err()
+}

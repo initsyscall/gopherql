@@ -29,6 +29,10 @@ type model struct {
 	queryLines    []string
 	scrollX       int
 	lastError     string
+	confirmBurn   bool
+	confirmStep   int
+	confirmMsg    string
+	burnTarget    string
 	width         int
 	height        int
 	ready         bool
@@ -117,9 +121,52 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 
-		case "enter":
+case "enter":
 			input := m.textInput.Value()
 			if input == "" {
+				return m, nil
+			}
+
+			if m.confirmBurn {
+				if strings.EqualFold(input, "y") {
+					if m.confirmStep == 1 {
+						m.confirmStep = 2
+						m.confirmMsg = fmt.Sprintf("burn %s permanently? type 'y' again to confirm or 'n' to cancel", m.burnTarget)
+						m.textInput.SetValue("")
+						return m, nil
+					}
+					switch m.burnTarget {
+					case "db":
+						if m.db != nil {
+							if err := burnDB(m.db); err != nil {
+								m.lastError = "burn db failed: " + err.Error()
+								m.queryOutput = errorStyle.Render(m.lastError)
+							} else {
+								m.lastError = ""
+								m.queryOutput = "database burned"
+							}
+						} else {
+							m.lastError = "no database connection"
+							m.queryOutput = errorStyle.Render(m.lastError)
+						}
+					case "history":
+						m.history.Clear()
+						m.historyVP.SetContent("")
+						m.lastError = ""
+						m.queryOutput = "history burned"
+					}
+				} else {
+					m.lastError = ""
+					m.queryOutput = "burn cancelled"
+				}
+				m.queryLines = strings.Split(m.queryOutput, "\n")
+				m.scrollX = 0
+				m.queryVP.SetContent(m.sliceQuery())
+				m.confirmBurn = false
+				m.confirmStep = 0
+				m.confirmMsg = ""
+				m.burnTarget = ""
+				m.textInput.SetValue("")
 				return m, nil
 			}
 
@@ -128,13 +175,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "quit":
 				return m, tea.Quit
 			case "burn":
-				m.history.Clear()
-				m.historyVP.SetContent("")
-				m.lastError = ""
-				m.queryOutput = result.text
-				m.queryLines = strings.Split(m.queryOutput, "\n")
-				m.scrollX = 0
-				m.queryVP.SetContent(m.sliceQuery())
+				m.confirmBurn = true
+				m.confirmStep = 1
+				m.burnTarget = result.target
+				m.confirmMsg = fmt.Sprintf("burn %s? this will permanently destroy it. type 'y' to confirm or 'n' to cancel", result.target)
+				m.textInput.SetValue("")
+				return m, nil
 			case "clear":
 				m.queryOutput = ""
 				m.queryLines = nil
@@ -172,14 +218,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "up":
-			if m.mode == modeSQL {
+			if m.mode == modeSQL && !m.confirmBurn {
 				prev := m.history.Prev()
 				m.textInput.SetValue(prev)
 			}
 			return m, nil
 
 		case "down":
-			if m.mode == modeSQL {
+			if m.mode == modeSQL && !m.confirmBurn {
 				next := m.history.Next()
 				m.textInput.SetValue(next)
 			}
@@ -241,9 +287,12 @@ func (m model) View() string {
 	prompt := promptStyle.Render("~> ") + m.textInput.View()
 
 	var bottom string
-	if m.lastError != "" {
+	switch {
+	case m.confirmBurn:
+		bottom = confirmStyle.Render(m.confirmMsg) + "\n" + prompt
+	case m.lastError != "":
 		bottom = errorStyle.Render(m.lastError) + "\n" + prompt
-	} else {
+	default:
 		bottom = prompt
 	}
 
