@@ -2,6 +2,10 @@
 
 A gopher sized SQLite IDE for your small databases and learning. Single binary, no SQLite install needed — `modernc.org/sqlite` ships it pure Go.
 
+## Preview
+
+![gopherQl preview](preview.png)
+
 ## Stack
 
 - **Go** — language
@@ -53,3 +57,10 @@ Type `/` to preview commands, then pick as you type.
 | `Ctrl+Shift+j` / `Ctrl+Shift+k` | scroll query pane vertically |
 | `Ctrl+Shift+→` / `Ctrl+Shift+←` | scroll query pane horizontally |
 | `Ctrl+c` | quit |
+
+## Manifesto
+
+- **KISS** — only what's needed to work. If it doesn't relate to the program, it's a user problem.
+- **Pragmatism** — complexity must justify itself by removing more future maintenance than it adds.
+- **Readability** — control flow should be simple and modular; anyone should pick it up without struggling.
+- **Modularity** — each file does one thing and does it well. No 'I can do everything' files.
