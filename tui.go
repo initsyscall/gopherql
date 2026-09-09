@@ -45,7 +45,7 @@ func newModel(dbPath string) model {
 	}
 
 	ti := textinput.New()
-	ti.Placeholder = "~>"
+	ti.Placeholder = ""
 	ti.Focus()
 	ti.CharLimit = 4096
 
@@ -293,6 +293,13 @@ func (m model) highlightMatch(cmd string) string {
 	return promptStyle.Render(rendered)
 }
 
+func (m model) promptIcon() string {
+	if m.mode == modeCommand {
+		return matchedStyle.Render("» ")
+	}
+	return promptStyle.Render("» ")
+}
+
 func (m model) View() string {
 	if !m.ready {
 		return "  initializing..."
@@ -318,7 +325,7 @@ func (m model) View() string {
 
 	panes := lipgloss.JoinHorizontal(lipgloss.Top, queryPane, historyPane)
 
-	prompt := promptStyle.Render("~> ") + m.textInput.View()
+	prompt := m.promptIcon() + m.textInput.View()
 
 	var bottom string
 	switch {
