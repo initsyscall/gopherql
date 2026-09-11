@@ -19,23 +19,24 @@ const (
 )
 
 type model struct {
-	db            *sql.DB
-	history       *History
-	textInput     textinput.Model
-	queryVP       viewport.Model
-	historyVP     viewport.Model
-	mode          mode
-	queryOutput   string
-	queryLines    []string
-	scrollX       int
-	lastError     string
-	confirmBurn   bool
-	confirmStep   int
-	confirmMsg    string
-	burnTarget    string
-	width         int
-	height        int
-	ready         bool
+	db          *sql.DB
+	history     *History
+	textInput   textinput.Model
+	queryVP     viewport.Model
+	historyVP   viewport.Model
+	mode        mode
+	queryOutput string
+	queryLines  []string
+	scrollX     int
+	lastError   string
+	confirmBurn bool
+	confirmStep int
+	confirmMsg  string
+	burnTarget  string
+	width       int
+	height      int
+	ready       bool
+	stacked     bool
 }
 
 func newModel(dbPath string) model {
@@ -46,6 +47,7 @@ func newModel(dbPath string) model {
 
 	ti := textinput.New()
 	ti.Placeholder = ""
+	ti.Prompt = ""
 	ti.Focus()
 	ti.CharLimit = 4096
 
@@ -69,20 +71,30 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 
-		leftWidth := int(float64(m.width) * 0.7)
-		rightWidth := m.width - leftWidth
+		m.stacked = m.width < 100
+
 		inputHeight := 3
 		paneHeight := m.height - inputHeight - 2
+		queryW, queryH, historyW, historyH := m.paneSize(paneHeight)
+
+		queryContentH := queryH - 3
+		if queryContentH < 1 {
+			queryContentH = 1
+		}
+		historyContentH := historyH - 3
+		if historyContentH < 1 {
+			historyContentH = 1
+		}
 
 		if !m.ready {
-			m.queryVP = viewport.New(leftWidth-2, paneHeight)
-			m.historyVP = viewport.New(rightWidth-2, paneHeight)
+			m.queryVP = viewport.New(queryW, queryContentH)
+			m.historyVP = viewport.New(historyW, historyContentH)
 			m.ready = true
 		} else {
-			m.queryVP.Width = leftWidth - 2
-			m.queryVP.Height = paneHeight
-			m.historyVP.Width = rightWidth - 2
-			m.historyVP.Height = paneHeight
+			m.queryVP.Width = queryW
+			m.queryVP.Height = queryContentH
+			m.historyVP.Width = historyW
+			m.historyVP.Height = historyContentH
 		}
 
 		m.queryVP.SetContent(m.sliceQuery())
@@ -121,7 +133,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 
-case "enter":
+		case "enter":
 			input := m.textInput.Value()
 			if input == "" {
 				return m, nil
@@ -244,7 +256,20 @@ case "enter":
 	return m, cmd
 }
 
+func (m model) paneSize(paneHeight int) (int, int, int, int) {
+	if m.stacked {
+		queryH := int(float64(paneHeight) * 0.7)
+		return m.width - 2, queryH, m.width - 2, paneHeight - queryH
+	}
+	leftWidth := int(float64(m.width) * 0.7)
+	rightWidth := m.width - leftWidth
+	return leftWidth - 2, paneHeight, rightWidth - 2, paneHeight
+}
+
 func (m model) historyPaneWidth() int {
+	if m.stacked {
+		return m.width - 4
+	}
 	left := int(float64(m.width) * 0.7)
 	return m.width - left - 3
 }
@@ -254,8 +279,11 @@ func (m model) sliceQuery() string {
 		return m.queryOutput
 	}
 	visible := make([]string, len(m.queryLines))
-	leftWidth := int(float64(m.width) * 0.7)
-	lineWidth := leftWidth - 6
+	lineWidth := m.width - 6
+	if !m.stacked {
+		leftWidth := int(float64(m.width) * 0.7)
+		lineWidth = leftWidth - 6
+	}
 	for i, line := range m.queryLines {
 		end := m.scrollX + lineWidth
 		if end > len(line) {
@@ -294,10 +322,7 @@ func (m model) highlightMatch(cmd string) string {
 }
 
 func (m model) promptIcon() string {
-	if m.mode == modeCommand {
-		return matchedStyle.Render("» ")
-	}
-	return promptStyle.Render("» ")
+	return promptStyle.Render("❯ ")
 }
 
 func (m model) View() string {
@@ -305,25 +330,29 @@ func (m model) View() string {
 		return "  initializing..."
 	}
 
-	leftWidth := int(float64(m.width) * 0.7)
-	rightWidth := m.width - leftWidth
 	inputHeight := 3
 	paneHeight := m.height - inputHeight - 2
+	queryW, queryH, historyW, historyH := m.paneSize(paneHeight)
 
 	queryTitle := titleStyle.Render(" Live Query ")
 	historyTitle := titleStyle.Render(" History ")
 
 	queryPane := queryPaneStyle.
-		Width(leftWidth - 2).
-		Height(paneHeight).
+		Width(queryW).
+		Height(queryH).
 		Render(queryTitle + "\n" + m.queryVP.View())
 
 	historyPane := historyPaneStyle.
-		Width(rightWidth - 2).
-		Height(paneHeight).
+		Width(historyW).
+		Height(historyH).
 		Render(historyTitle + "\n" + m.historyVP.View())
 
-	panes := lipgloss.JoinHorizontal(lipgloss.Top, queryPane, historyPane)
+	var panes string
+	if m.stacked {
+		panes = lipgloss.JoinVertical(lipgloss.Top, queryPane, historyPane)
+	} else {
+		panes = lipgloss.JoinHorizontal(lipgloss.Top, queryPane, historyPane)
+	}
 
 	prompt := m.promptIcon() + m.textInput.View()
 
