@@ -15,11 +15,16 @@ A gopher sized SQLite IDE for your small databases and learning. Single binary, 
 
 ## Usage
 
-### Installation
+### Release Build 
+
+Just get the executables from github release. And make it executable with `chmod +x ./gopherql*` if youre on unix-like system. Windows exe works fine.
+
+### By Installation
 
 ```bash
 go install codeberg.org/initsyscall/gopherql@latest
 ```
+
 
 ### Run
 
