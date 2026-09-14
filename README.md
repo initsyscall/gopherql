@@ -17,7 +17,7 @@ A gopher sized SQLite IDE for your small databases and learning. Single binary, 
 
 ### Release Build 
 
-Just get the executables from github release. And make it executable with `chmod +x ./gopherql*` if youre on unix-like system. Windows exe works fine.
+Just get the executables from [Github Release](https://github.com/initsyscall/gopherql/releases/tag/v1.0.0). And make it executable with `chmod +x ./gopherql*` if youre on unix-like system. Windows exe works fine.
 
 ### By Installation
 
