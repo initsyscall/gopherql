@@ -247,6 +247,10 @@ func (m model) syncLayout() model {
 	paneHeight := m.paneHeight()
 	queryW, queryH, historyW, historyH := m.paneSize(paneHeight)
 
+	if w := m.width - lipgloss.Width(m.promptIcon()) - 1; w > 0 {
+		m.textInput.Width = w
+	}
+
 	queryContentH := queryH - 3
 	if queryContentH < 1 {
 		queryContentH = 1
