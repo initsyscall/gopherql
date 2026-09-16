@@ -219,6 +219,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.mode == modeSQL && !m.confirmBurn {
 				prev := m.history.Prev()
 				m.textInput.SetValue(prev)
+				m.textInput.SetCursor(len([]rune(prev)))
 			}
 			return m.refreshPreview(), nil
 
@@ -226,6 +227,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.mode == modeSQL && !m.confirmBurn {
 				next := m.history.Next()
 				m.textInput.SetValue(next)
+				m.textInput.SetCursor(len([]rune(next)))
 			}
 			return m.refreshPreview(), nil
 		}
