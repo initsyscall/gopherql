@@ -184,7 +184,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.lastError = result.text
 			case "":
 				m.history.Add(input)
+				wasAtBottom := m.historyVP.AtBottom()
 				m.historyVP.SetContent(wrapHistory(m.history.entries, m.historyPaneWidth()))
+				if wasAtBottom {
+					m.historyVP.GotoBottom()
+				}
 
 				if m.db != nil {
 					cols, rows, err := executeQueryWithRows(m.db, input)
@@ -266,7 +270,8 @@ func (m model) syncLayout() model {
 		historyContentH = 1
 	}
 
-	if !m.ready {
+	newReady := !m.ready
+	if newReady {
 		m.queryVP = viewport.New(queryW, queryContentH)
 		m.historyVP = viewport.New(historyW, historyContentH)
 		m.ready = true
@@ -279,6 +284,10 @@ func (m model) syncLayout() model {
 
 	m.queryVP.SetContent(m.sliceQuery())
 	m.historyVP.SetContent(wrapHistory(m.history.entries, m.historyPaneWidth()))
+
+	if newReady {
+		m.historyVP.GotoBottom()
+	}
 
 	return m
 }
