@@ -58,9 +58,9 @@ Type `/` to preview commands, then pick as you type.
 |---|---|
 | `Enter` | run query / command |
 | `↑` / `↓` | cycle command history |
-| `Ctrl+j` / `Ctrl+k` | scroll history pane |
-| `Ctrl+Shift+j` / `Ctrl+Shift+k` | scroll query pane vertically |
-| `Ctrl+Shift+→` / `Ctrl+Shift+←` | scroll query pane horizontally |
+| `Shift+↑` / `Shift+↓` / `Shift+J` / `Shift+K` | scroll history pane |
+| `Ctrl+Shift+↑` / `Ctrl+Shift+↓` / `Ctrl+Shift+J` / `Ctrl+Shift+K` | scroll query pane vertically |
+| `Ctrl+Shift+→` / `Ctrl+Shift+←` / `Shift+L` / `Shift+H` | scroll query pane horizontally |
 | `Ctrl+c` | quit |
 
 ## Manifesto
