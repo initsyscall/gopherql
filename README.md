@@ -54,6 +54,10 @@ Type `/` to preview commands, then pick as you type.
 
 ## Keys
 
+> [!NOTE]
+> This keymap reflects the latest build. For stable release check the stable release note.
+
+
 | Key | Action |
 |---|---|
 | `Enter` | run query / command |
