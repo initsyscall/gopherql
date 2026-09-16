@@ -58,6 +58,8 @@ Type `/` to preview commands, then pick as you type.
 |---|---|
 | `Enter` | run query / command |
 | `↑` / `↓` | cycle command history |
+| `Ctrl+←` / `Ctrl+→` | jump word backward / forward in prompt |
+| `Ctrl+w` / `Alt+Backspace` | delete word backward; `Alt+d` / `Ctrl+Delete` delete word forward |
 | `Shift+↑` / `Shift+↓` / `Shift+J` / `Shift+K` | scroll history pane |
 | `Ctrl+Shift+↑` / `Ctrl+Shift+↓` / `Ctrl+Shift+J` / `Ctrl+Shift+K` | scroll query pane vertically |
 | `Ctrl+Shift+→` / `Ctrl+Shift+←` / `Shift+L` / `Shift+H` | scroll query pane horizontally |

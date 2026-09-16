@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -51,6 +52,11 @@ func newModel(dbPath string) model {
 	ti.Prompt = ""
 	ti.Focus()
 	ti.CharLimit = 4096
+
+	km := textinput.DefaultKeyMap
+	km.DeleteWordBackward = key.NewBinding(key.WithKeys("alt+backspace", "ctrl+w", "ctrl+backspace"))
+	km.DeleteWordForward = key.NewBinding(key.WithKeys("alt+delete", "alt+d", "ctrl+delete"))
+	ti.KeyMap = km
 
 	h := newHistory(dbPath)
 
@@ -100,7 +106,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+shift+k", "ctrl+K", "ctrl+shift+up":
 			m.queryVP.LineUp(1)
 			return m, nil
-		case "H", "ctrl+shift+left", "ctrl+left":
+		case "H", "ctrl+shift+left":
 			if m.scrollX > 0 {
 				m.scrollX -= 4
 				if m.scrollX < 0 {
@@ -109,7 +115,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.queryVP.SetContent(m.sliceQuery())
 			}
 			return m, nil
-		case "L", "ctrl+shift+right", "ctrl+right":
+		case "L", "ctrl+shift+right":
 			m.scrollX += 4
 			m.queryVP.SetContent(m.sliceQuery())
 			return m, nil
