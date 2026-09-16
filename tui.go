@@ -37,6 +37,7 @@ type model struct {
 	height      int
 	ready       bool
 	stacked     bool
+	previewRows int
 }
 
 func newModel(dbPath string) model {
@@ -72,35 +73,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 
 		m.stacked = m.width < 100
+		m.previewRows = m.previewRowCount()
 
-		inputHeight := 3
-		paneHeight := m.height - inputHeight - 2
-		queryW, queryH, historyW, historyH := m.paneSize(paneHeight)
-
-		queryContentH := queryH - 3
-		if queryContentH < 1 {
-			queryContentH = 1
-		}
-		historyContentH := historyH - 3
-		if historyContentH < 1 {
-			historyContentH = 1
-		}
-
-		if !m.ready {
-			m.queryVP = viewport.New(queryW, queryContentH)
-			m.historyVP = viewport.New(historyW, historyContentH)
-			m.ready = true
-		} else {
-			m.queryVP.Width = queryW
-			m.queryVP.Height = queryContentH
-			m.historyVP.Width = historyW
-			m.historyVP.Height = historyContentH
-		}
-
-		m.queryVP.SetContent(m.sliceQuery())
-		m.historyVP.SetContent(wrapHistory(m.history.entries, m.historyPaneWidth()))
-
-		return m, nil
+		return m.syncLayout(), nil
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -145,7 +120,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.confirmStep = 2
 						m.confirmMsg = fmt.Sprintf("burn %s permanently? type 'y' again to confirm or 'n' to cancel", m.burnTarget)
 						m.textInput.SetValue("")
-						return m, nil
+						return m.refreshPreview(), nil
 					}
 					switch m.burnTarget {
 					case "db":
@@ -179,7 +154,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.confirmMsg = ""
 				m.burnTarget = ""
 				m.textInput.SetValue("")
-				return m, nil
+				return m.refreshPreview(), nil
 			}
 
 			result := handleCommand(input)
@@ -192,7 +167,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.burnTarget = result.target
 				m.confirmMsg = fmt.Sprintf("burn %s? this will permanently destroy it. type 'y' to confirm or 'n' to cancel", result.target)
 				m.textInput.SetValue("")
-				return m, nil
+				return m.refreshPreview(), nil
 			case "clear":
 				m.queryOutput = ""
 				m.queryLines = nil
@@ -228,32 +203,103 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.textInput.SetValue("")
 			m.mode = modeSQL
-			return m, nil
+			return m.refreshPreview(), nil
 
 		case "up":
 			if m.mode == modeSQL && !m.confirmBurn {
 				prev := m.history.Prev()
 				m.textInput.SetValue(prev)
 			}
-			return m, nil
+			return m.refreshPreview(), nil
 
 		case "down":
 			if m.mode == modeSQL && !m.confirmBurn {
 				next := m.history.Next()
 				m.textInput.SetValue(next)
 			}
-			return m, nil
+			return m.refreshPreview(), nil
 		}
 	}
 
 	var cmd tea.Cmd
 	m.textInput, cmd = m.textInput.Update(msg)
+	m = m.refreshPreview()
 	if strings.HasPrefix(m.textInput.Value(), "/") {
 		m.mode = modeCommand
 	} else {
 		m.mode = modeSQL
 	}
 	return m, cmd
+}
+
+func (m model) layoutExtra() int {
+	if m.stacked {
+		return 5
+	}
+	return 3
+}
+
+func (m model) paneHeight() int {
+	return max(6, m.height-m.previewRows-3-m.layoutExtra())
+}
+
+func (m model) syncLayout() model {
+	paneHeight := m.paneHeight()
+	queryW, queryH, historyW, historyH := m.paneSize(paneHeight)
+
+	queryContentH := queryH - 3
+	if queryContentH < 1 {
+		queryContentH = 1
+	}
+	historyContentH := historyH - 3
+	if historyContentH < 1 {
+		historyContentH = 1
+	}
+
+	if !m.ready {
+		m.queryVP = viewport.New(queryW, queryContentH)
+		m.historyVP = viewport.New(historyW, historyContentH)
+		m.ready = true
+	} else {
+		m.queryVP.Width = queryW
+		m.queryVP.Height = queryContentH
+		m.historyVP.Width = historyW
+		m.historyVP.Height = historyContentH
+	}
+
+	m.queryVP.SetContent(m.sliceQuery())
+	m.historyVP.SetContent(wrapHistory(m.history.entries, m.historyPaneWidth()))
+
+	return m
+}
+
+func (m model) refreshPreview() model {
+	rows := m.previewRowCount()
+	if rows != m.previewRows {
+		m.previewRows = rows
+		return m.syncLayout()
+	}
+	return m
+}
+
+func (m model) previewRowCount() int {
+	w := m.width - 3
+	value := m.textInput.Value()
+	if value == "" || w < 1 || strings.HasPrefix(value, "/") || lipgloss.Width(value) <= w {
+		return 0
+	}
+	rows := len(strings.Split(lipgloss.NewStyle().Width(w).Render(value), "\n"))
+	if cap := m.height - m.layoutExtra() - 9; rows > cap {
+		return max(0, cap)
+	}
+	return rows
+}
+
+func (m model) queryPreview() string {
+	if m.previewRows < 1 {
+		return ""
+	}
+	return mutedStyle.Render(lipgloss.NewStyle().Width(m.width - 3).Render(m.textInput.Value()))
 }
 
 func (m model) paneSize(paneHeight int) (int, int, int, int) {
@@ -330,8 +376,7 @@ func (m model) View() string {
 		return "  initializing..."
 	}
 
-	inputHeight := 3
-	paneHeight := m.height - inputHeight - 2
+	paneHeight := m.paneHeight()
 	queryW, queryH, historyW, historyH := m.paneSize(paneHeight)
 
 	queryTitle := titleStyle.Render(" Live Query ")
@@ -364,6 +409,8 @@ func (m model) View() string {
 		bottom = m.commandPreview() + "\n" + prompt
 	case m.lastError != "":
 		bottom = errorStyle.Render(m.lastError) + "\n" + prompt
+	case m.previewRows > 0:
+		bottom = m.queryPreview() + "\n" + prompt
 	default:
 		bottom = prompt
 	}
