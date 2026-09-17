@@ -22,7 +22,7 @@ Just get the executables from [Github Release](https://github.com/initsyscall/go
 ### By Installation
 
 ```bash
-go install codeberg.org/initsyscall/gopherql@v1.0.0
+go install codeberg.org/initsyscall/gopherql@v1.1.0
 ```
 
 
