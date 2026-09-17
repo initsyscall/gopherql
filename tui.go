@@ -94,10 +94,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+k":
 			m.historyVP.LineUp(1)
 			return m, nil
-		case "shift+up", "K":
+		case "shift+up":
 			m.historyVP.LineUp(1)
 			return m, nil
-		case "shift+down", "J":
+		case "shift+down":
 			m.historyVP.LineDown(1)
 			return m, nil
 		case "ctrl+shift+j", "ctrl+J", "ctrl+shift+down":
@@ -106,7 +106,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+shift+k", "ctrl+K", "ctrl+shift+up":
 			m.queryVP.LineUp(1)
 			return m, nil
-		case "H", "ctrl+shift+left":
+		case "ctrl+shift+left":
 			if m.scrollX > 0 {
 				m.scrollX -= 4
 				if m.scrollX < 0 {
@@ -115,7 +115,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.queryVP.SetContent(m.sliceQuery())
 			}
 			return m, nil
-		case "L", "ctrl+shift+right":
+		case "ctrl+shift+right":
 			m.scrollX += 4
 			m.queryVP.SetContent(m.sliceQuery())
 			return m, nil
